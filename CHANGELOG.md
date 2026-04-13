@@ -40,3 +40,12 @@ All notable changes to `darvis/livewire-google-analytics` will be documented in 
 - Configuration file for default parameters
 - Event middleware for filtering/transforming events
 - Testing utilities
+
+## [1.1.0] - 2026-04-13
+
+### Added
+- Support for Laravel 13
+
+### Changed
+- Expanded `orchestra/testbench` dev support to include v10
+- Expanded Pest and Pest Laravel plugin dev support to include v3 and v4

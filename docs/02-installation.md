@@ -6,7 +6,7 @@ This guide shows you step-by-step how to install and configure the package.
 
 Before you begin, make sure you have:
 
-- ✅ Laravel 10, 11, or 12
+- ✅ Laravel 10, 11, 12, or 13
 - ✅ Livewire 3 or 4
 - ✅ PHP 8.1 or higher
 - ✅ A Google Analytics 4 property (optional for testing)

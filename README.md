@@ -20,7 +20,7 @@ $this->trackLead(['form_name' => 'contact_form']);
 - ✅ **Secure** - No JavaScript injection vulnerabilities
 - ✅ **Zero configuration** - Works out of the box
 - ✅ **Livewire 3 & 4** - Full support for both versions
-- ✅ **Laravel 10, 11, 12** - Compatible with all modern Laravel versions
+- ✅ **Laravel 10, 11, 12, 13** - Compatible with all modern Laravel versions
 
 ## Quick Start
 
@@ -142,7 +142,7 @@ PHP Component → Livewire Event → JavaScript Listener → Google Analytics
 ## Requirements
 
 - PHP 8.1 or higher
-- Laravel 10, 11, or 12
+- Laravel 10, 11, 12, or 13
 - Livewire 3 or 4
 - Google Analytics 4 property
 
