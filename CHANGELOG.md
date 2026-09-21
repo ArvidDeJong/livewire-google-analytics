@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-21
+
 ### Added
 - A documentation site at https://arviddejong.github.io/livewire-google-analytics/ with an FAQ and an
   `llms.txt`, and a Laravel Boost guideline and skill in `resources/boost/`, so an AI assistant in
@@ -68,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Support for Livewire 3 & 4
 - PHP 8.1+ support
 
-[Unreleased]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ArvidDeJong/livewire-google-analytics/releases/tag/v1.0.0
