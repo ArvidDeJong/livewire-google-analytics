@@ -1,0 +1,51 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security issue? Please report it privately instead: see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead? Say whether the ga:event browser event fires and whether window.gtag exists; the troubleshooting page shows how to check both.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The component action with the tracking call, and how the listener is loaded (the Blade view or the published file), trimmed to the smallest example that fails. Leave out your measurement id.
+      render: php
+    validations:
+      required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: Package version
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: input
+    id: livewire-version
+    attributes:
+      label: Livewire version
+      placeholder: "4.0"
+    validations:
+      required: true
+  - type: input
+    id: laravel-version
+    attributes:
+      label: Laravel version
+      placeholder: "13.0"
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: "8.4"
+    validations:
+      required: true
