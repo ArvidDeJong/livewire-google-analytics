@@ -2,15 +2,16 @@
 
 namespace App\Livewire\Examples;
 
+use App\Mail\ContactMail;
 use Darvis\LivewireGoogleAnalytics\Traits\TracksAnalytics;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
 /**
  * Example: Simple Contact Form with Google Analytics Tracking
- * 
+ *
  * This example shows how to track form submissions in Google Analytics.
- * 
+ *
  * Features:
  * - Form validation
  * - Email sending
@@ -20,15 +21,17 @@ use Livewire\Component;
 class ContactForm extends Component
 {
     use TracksAnalytics;
-    
+
     // Form fields
     public string $name = '';
+
     public string $email = '';
+
     public string $message = '';
-    
+
     // UI state
     public bool $success = false;
-    
+
     /**
      * Validation rules for the form
      */
@@ -40,10 +43,10 @@ class ContactForm extends Component
             'message' => 'required|min:10|max:2000',
         ];
     }
-    
+
     /**
      * Handle form submission
-     * 
+     *
      * This method:
      * 1. Validates the input
      * 2. Sends an email
@@ -54,12 +57,12 @@ class ContactForm extends Component
     {
         // Step 1: Validate the form
         $validated = $this->validate();
-        
+
         // Step 2: Send email (replace with your email logic)
         Mail::to('info@example.com')->send(
-            new \App\Mail\ContactMail($validated)
+            new ContactMail($validated)
         );
-        
+
         // Step 3: Track the conversion in Google Analytics
         // This sends a 'generate_lead' event to GA4
         $this->trackLead([
@@ -67,12 +70,12 @@ class ContactForm extends Component
             'lead_type' => 'contact',
             'source' => 'livewire',
         ]);
-        
+
         // Step 4: Reset form and show success
         $this->reset(['name', 'email', 'message']);
         $this->success = true;
     }
-    
+
     /**
      * Render the component
      */

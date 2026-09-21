@@ -1,0 +1,10 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 8
+    paths:
+        - src
+        # The trait is only used by host app components. The fixture component uses it, so PHPStan
+        # analyses the trait instead of skipping it as unused.
+        - tests/Fixtures
