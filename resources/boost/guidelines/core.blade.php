@@ -1,0 +1,40 @@
+## darvis/livewire-google-analytics
+
+Sends Google Analytics 4 events from Livewire components. A trait dispatches a `ga:event` browser event, and a small listener in the layout forwards it to `gtag('event', name, params)`. Nothing is sent from the server.
+
+- Add `Darvis\LivewireGoogleAnalytics\Traits\TracksAnalytics` to the component. Never build `gtag()` calls with `$this->js()`: a value from a visitor would become JavaScript source.
+- `trackEvent(string $name, array $params = [])` sends any event. `trackLead($params)` sends `generate_lead`. `trackNewsletterSignup($params)` sends `sign_up` with `method` set to `newsletter` unless the params hold their own `method`. `trackCustomEvent($name, $params)` sends `ga_` plus the name; pass the name without that prefix.
+- All four are `protected`, return nothing and never throw. Keep them protected: a public Livewire method can be called from the browser with any arguments.
+- Call them in an action, after `validate()` and after the work succeeded. Never in `render()`, which runs on every request.
+- The layout needs `@@include('livewire-google-analytics::script')` once. For a Content Security Policy without inline scripts, publish `--tag=livewire-google-analytics-js` and load `/vendor/livewire-google-analytics/google-analytics.js` instead.
+- The package does not load `gtag.js` and has no config file, measurement id or environment variable. The host app adds its own Google tag. Don't invent a `config('google-analytics.…')` key.
+- When `window.gtag` is not a function (ad blocker, no consent, no tag) the event is dropped, not queued. The Livewire action is not affected.
+- The listener registers once per window, so `wire:navigate` and a second copy of the script don't double the events. A published view or file from before that fix has to be published again.
+- An action that redirects sends the event and the navigation in one response; track on the page that follows when the event must not get lost.
+- Keep personal data (names, e-mail addresses, free text) out of the params.
+- In tests, assert with `->assertDispatched('ga:event', name: '...', params: [...])`; `params` is compared as a whole.
+
+@verbatim
+<code-snippet name="Track a lead after a Livewire form was handled" lang="php">
+use Darvis\LivewireGoogleAnalytics\Traits\TracksAnalytics;
+use Livewire\Component;
+
+class ContactForm extends Component
+{
+    use TracksAnalytics;
+
+    public function submit(): void
+    {
+        $validated = $this->validate();
+
+        ContactRequest::create($validated);
+
+        // After the work, so a rejected form is never counted as a conversion.
+        $this->trackLead([
+            'form_name' => 'contact_form',
+            'lead_type' => 'contact',
+        ]);
+    }
+}
+</code-snippet>
+@endverbatim

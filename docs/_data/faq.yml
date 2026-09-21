@@ -1,0 +1,47 @@
+# Questions as people ask them to an assistant. Short, factual answers.
+# Rendered on faq.md, in the FAQPage structured data and in llms.txt.
+- q: How do I send a Google Analytics 4 event from a Laravel Livewire component?
+  a: >-
+    Install `darvis/livewire-google-analytics`, put `@include('livewire-google-analytics::script')` once
+    in your layout, add the `TracksAnalytics` trait to the component and call
+    `$this->trackEvent('purchase', ['value' => 25.99])` or `$this->trackLead([...])` in an action. The
+    trait dispatches a `ga:event` browser event and the script forwards it to `gtag('event', ...)`.
+
+- q: Does darvis/livewire-google-analytics load Google Analytics for me?
+  a: >-
+    No. The package has no measurement id and no config file, and it does not load `gtag.js`. Put
+    Google's own tag in your layout. The listener only calls `window.gtag` when it exists.
+
+- q: What happens when Google Analytics is blocked by an ad blocker or a cookie banner?
+  a: >-
+    The listener checks `typeof window.gtag` for every event. When `gtag` is not a function the event is
+    dropped: nothing throws and nothing is queued for later. The Livewire action itself is not affected.
+
+- q: Which GA4 events do the helper methods send?
+  a: >-
+    `trackLead()` sends `generate_lead`, `trackNewsletterSignup()` sends `sign_up` with `method` set to
+    `newsletter`, `trackCustomEvent('download')` sends `ga_download`, and `trackEvent()` sends the name
+    you give it. The parameters you pass go to GA4 unchanged.
+
+- q: Why is every Google Analytics event sent twice in my Livewire app?
+  a: >-
+    Up to version 1.1.0 the listener registered itself again on every `wire:navigate` visit, and again
+    when both the Blade view and the published JavaScript file were on the page. Later versions listen
+    once per window. Publish the view or the file again if you published them before. A tracking call in
+    `render()` also repeats, because `render()` runs on every request.
+
+- q: Is it safe to put form input in the event parameters?
+  a: >-
+    Yes. The parameters travel as JSON in the Livewire response and reach `gtag()` as a JavaScript
+    object; no value is written into a script, so quotes or tags in the input cannot break out. Do keep
+    personal data such as names and e-mail addresses out of the parameters: Google's terms forbid it.
+
+- q: How do I test that a Livewire component tracks an event?
+  a: >-
+    Use Livewire's own assertion, no browser needed:
+    `Livewire::test(ContactForm::class)->call('submit')->assertDispatched('ga:event', name: 'generate_lead', params: [...])`.
+
+- q: Which Laravel, Livewire and PHP versions does darvis/livewire-google-analytics support?
+  a: >-
+    PHP 8.2 and higher with Laravel 11, 12 or 13 and Livewire 3 or 4. The test suite runs on every
+    combination, on the lowest and the latest dependencies. Sites on Laravel 10 or PHP 8.1 stay on 1.1.x.

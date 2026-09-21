@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue
+    url: https://github.com/ArvidDeJong/livewire-google-analytics/security/advisories/new
+    about: Report a vulnerability privately, for example a way to run script through an event parameter.
+  - name: Documentation
+    url: https://arviddejong.github.io/livewire-google-analytics/
+    about: Installation, tracking events, how it works, testing and troubleshooting.

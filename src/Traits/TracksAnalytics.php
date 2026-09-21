@@ -7,9 +7,8 @@ trait TracksAnalytics
     /**
      * Track a GA4 event via browser dispatch.
      *
-     * @param string $name Event name
-     * @param array $params Event parameters
-     * @return void
+     * @param  string  $name  Event name
+     * @param  array<string, mixed>  $params  Event parameters
      */
     protected function trackEvent(string $name, array $params = []): void
     {
@@ -19,8 +18,7 @@ trait TracksAnalytics
     /**
      * Standard lead tracking (GA4 conversion).
      *
-     * @param array $params Event parameters
-     * @return void
+     * @param  array<string, mixed>  $params  Event parameters
      */
     protected function trackLead(array $params = []): void
     {
@@ -30,8 +28,7 @@ trait TracksAnalytics
     /**
      * Track newsletter signup.
      *
-     * @param array $params Event parameters
-     * @return void
+     * @param  array<string, mixed>  $params  Event parameters
      */
     protected function trackNewsletterSignup(array $params = []): void
     {
@@ -41,12 +38,11 @@ trait TracksAnalytics
     /**
      * Track custom event with ga_ prefix.
      *
-     * @param string $eventName Event name (without ga_ prefix)
-     * @param array $params Event parameters
-     * @return void
+     * @param  string  $eventName  Event name (without ga_ prefix)
+     * @param  array<string, mixed>  $params  Event parameters
      */
     protected function trackCustomEvent(string $eventName, array $params = []): void
     {
-        $this->trackEvent('ga_' . $eventName, $params);
+        $this->trackEvent('ga_'.$eventName, $params);
     }
 }

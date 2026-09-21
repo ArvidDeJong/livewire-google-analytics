@@ -1,0 +1,49 @@
+title: Livewire Google Analytics
+description: "darvis/livewire-google-analytics sends Google Analytics 4 events from Laravel Livewire components: a trait dispatches a browser event and a small listener forwards it to gtag()."
+url: https://arviddejong.github.io
+baseurl: /livewire-google-analytics
+
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+plugins:
+  - jekyll-remote-theme
+  - jekyll-relative-links
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Facts about the package, used by the structured data and llms.txt.
+package:
+  name: darvis/livewire-google-analytics
+  repository: https://github.com/ArvidDeJong/livewire-google-analytics
+  packagist: https://packagist.org/packages/darvis/livewire-google-analytics
+  license_url: https://github.com/ArvidDeJong/livewire-google-analytics/blob/main/LICENSE
+  requires: "PHP 8.2+, Laravel 11, 12 or 13, Livewire 3 or 4, a Google tag (gtag.js) on the page"
+  platforms: [Laravel, Livewire]
+  keywords: [laravel, livewire, google analytics, ga4, gtag, event tracking, conversion tracking, generate_lead, analytics]
+
+# Developer credit in the footer and the structured data.
+developer:
+  company: ARVID.NL
+  url: https://arvid.nl
+
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+
+aux_links:
+  GitHub: https://github.com/ArvidDeJong/livewire-google-analytics
+  Packagist: https://packagist.org/packages/darvis/livewire-google-analytics
+aux_links_new_tab: true
+
+gh_edit_link: true
+gh_edit_link_text: Edit this page on GitHub
+gh_edit_repository: https://github.com/ArvidDeJong/livewire-google-analytics
+gh_edit_branch: main
+gh_edit_source: docs
+gh_edit_view_mode: tree
+
+# Social preview image for every page (Open Graph and Twitter card, through jekyll-seo-tag).
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/images/social-preview.png
