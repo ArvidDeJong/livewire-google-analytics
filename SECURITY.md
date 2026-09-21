@@ -1,8 +1,9 @@
 # Security policy
 
 This package passes values from your Livewire components to JavaScript in the visitor's browser. A
-way to make an event name or a parameter run as script, or to make the package's view output
-anything that comes from a request, counts as a security issue.
+way to make an event name or a parameter run as script counts as a security issue. That includes the
+events the view writes into its script after a redirect: they are JSON with every tag character and
+quote escaped, and a way around that escaping is a vulnerability.
 
 ## Supported versions
 

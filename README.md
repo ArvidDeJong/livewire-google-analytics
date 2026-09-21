@@ -11,7 +11,9 @@ Google Analytics 4 event tracking for Laravel Livewire components, without JavaS
 
 - **One line per event** - `trackLead()`, `trackNewsletterSignup()`, `trackCustomEvent()` and `trackEvent()` for everything else
 - **Parameters as data** - they travel as JSON through Livewire, so form input can never break out of a script
-- **Fails quietly** - no `gtag` on the page (ad blocker, no consent) means the event is dropped and the action carries on
+- **Waits for consent tools** - an event tracked before `gtag` exists waits (at most 50, at most 30 minutes) and is sent in order once Google's tag is there; opt out with `['queue' => false]`
+- **Survives a redirect** - `trackEventAfterRedirect()` carries the event to the next page through the session
+- **Fails quietly** - no `gtag` at all (ad blocker, no consent) means nothing is sent and the action carries on
 - **No double events** - the listener registers once per window, also with `wire:navigate`
 - **Nothing to configure** - no config file and no measurement id; your own Google tag stays where it is
 - **Laravel Boost** - guideline and skill included, so an AI assistant in your app knows the API
@@ -65,13 +67,21 @@ $this->trackCustomEvent('download_brochure', ['name' => 'Catalogue']);   // ga_d
 
 Track in an action, after the work succeeded. Not in `render()`, which runs on every request.
 
+In an action that ends in a redirect, use the `…AfterRedirect()` variant. The page after the redirect has to include the Blade view:
+
+```php
+$this->trackEventAfterRedirect('purchase', ['transaction_id' => 'T12345', 'value' => 25.99, 'currency' => 'EUR']);
+
+$this->redirectRoute('orders.thanks');
+```
+
 ## Documentation
 
 The full documentation lives on the [documentation site](https://arviddejong.github.io/livewire-google-analytics/):
 
 - [Installation](https://arviddejong.github.io/livewire-google-analytics/installation.html): the listener, your Google tag, a strict Content Security Policy
 - [Tracking events](https://arviddejong.github.io/livewire-google-analytics/usage.html): the four methods and where to call them
-- [How it works](https://arviddejong.github.io/livewire-google-analytics/concepts.html): the browser event and what happens without gtag
+- [How it works](https://arviddejong.github.io/livewire-google-analytics/concepts.html): the browser event, the queue for events without gtag, the redirect
 - [Examples](https://arviddejong.github.io/livewire-google-analytics/examples.html)
 - [Testing](https://arviddejong.github.io/livewire-google-analytics/testing.html): `assertDispatched('ga:event', ...)` and checking in the browser
 - [Troubleshooting](https://arviddejong.github.io/livewire-google-analytics/troubleshooting.html)

@@ -15,7 +15,7 @@ window.addEventListener('ga:event', (event) => console.log('ga:event', event.det
 | You see | The problem is in |
 | --- | --- |
 | Nothing | the component: the tracking call is not reached |
-| `ga:event {...} "undefined"` | the Google tag: `gtag` does not exist, the event is dropped |
+| `ga:event {...} "undefined"` | the Google tag: `gtag` does not exist (yet), the event waits in the queue |
 | `ga:event {...} "function"` and nothing in GA4 | the listener is missing, or GA4 itself (filters, consent mode, the wrong property) |
 
 ## No event at all
@@ -27,16 +27,22 @@ window.addEventListener('ga:event', (event) => console.log('ga:event', event.det
 ## The event is dispatched but never reaches GA4
 
 - `@include('livewire-google-analytics::script')` is missing from the layout this page uses. A second layout (for example a guest layout) needs it too.
-- `window.gtag` is not a function: the Google tag is not in the layout, an ad blocker removed it, or your consent tool has not loaded it. The listener drops the event and does not retry.
-- The action ends in a redirect. The event and the navigation arrive in the same response; see the purchase example on [Examples](examples.md).
+- `window.gtag` is not a function: the Google tag is not in the layout, an ad blocker removed it, or your consent tool has not loaded it. The event waits, for at most 30 minutes and as long as the page lives; it is sent when `gtag` appears and lost when the visitor leaves first. `window.livewireGoogleAnalyticsState.waiting` shows what is waiting.
+- The action ends in a full page redirect and uses `trackEvent()`. The event fires on the page that is going away. Use `trackEventAfterRedirect()`, see [Tracking events](usage.md).
+- You use `trackEventAfterRedirect()` and the page after the redirect does not include the Blade view. The published JavaScript file cannot read the session; the event stays there until a page with the view is rendered, for at most 30 minutes.
 - The measurement id in your Google tag belongs to another property. The package never sees that id.
 
 ## Every event arrives twice or more
 
 - You are on version 1.1.0 or lower and use `wire:navigate`: the inline script ran again on every visit and each run added a listener. Update the package.
 - You published the view or the JavaScript file before that fix. A published copy is not updated by Composer: publish it again with `--force`, or delete your copy of the view.
+- The same event is tracked with `trackEvent()` and with `trackEventAfterRedirect()`. Use one of them.
 - The tracking call is in `render()`, in a lifecycle hook such as `updated()`, or inside a loop.
 - The Google tag is on the page twice, for example once in the layout and once through Google Tag Manager. Then GA4 counts `page_view` twice as well.
+
+## Numbers went up after an update
+
+In versions after 1.2.0, events that arrive before `window.gtag` exists are no longer lost, and neither are events tracked with an `…AfterRedirect()` method. On a site with a consent tool that means more events than before; they were always there, they just never reached Google. `['queue' => false]` on the include brings the old behaviour back.
 
 ## The view is not found
 

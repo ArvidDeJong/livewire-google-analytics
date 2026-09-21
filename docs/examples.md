@@ -115,7 +115,26 @@ public function completePurchase(): void
 }
 ```
 
-This example shows the confirmation in the same component instead of redirecting. With a redirect in the same action the browser event and the navigation happen in one response, and whether GA4 still receives the event depends on the browser. If you need the redirect, track the purchase from a component on the confirmation page and make sure a reload cannot send it twice.
+## Purchase, then a redirect
+
+```php
+public function completePurchase(): void
+{
+    $order = $this->cart->checkout();
+
+    $this->trackEventAfterRedirect('purchase', [
+        'transaction_id' => (string) $order->id,
+        'value' => (float) $order->total,
+        'currency' => 'EUR',
+    ]);
+
+    $this->redirectRoute('orders.thanks', $order);
+}
+```
+
+The event waits in the session and the listener view on the thank-you page sends it, once; a reload of that page sends nothing. The thank-you page has to include `livewire-google-analytics::script`. The published JavaScript file alone cannot do this.
+
+With a plain `trackEvent()` here, the browser event would fire on the checkout page while the browser is already leaving it.
 
 ## File download
 

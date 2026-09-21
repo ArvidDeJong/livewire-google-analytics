@@ -38,6 +38,31 @@ it('tracks nothing when the form is rejected', function () {
 
 `params` is compared as a whole. Assert on the complete array your component sends, including `method` for `trackNewsletterSignup()`.
 
+### An event that is carried over a redirect
+
+The `…AfterRedirect()` methods put the event in the session. `Livewire::test()` sends its requests without middleware, so nothing starts the session; start it yourself, or the trait falls back to dispatching the event.
+
+```php
+it('carries the purchase over the redirect', function () {
+    session()->start();
+
+    Livewire::test(Checkout::class)
+        ->call('completePurchase')
+        ->assertRedirect(route('orders.thanks', 1))
+        ->assertNotDispatched('ga:event');
+
+    expect(session('livewire-google-analytics.events.0.name'))->toBe('purchase')
+        ->and(session('livewire-google-analytics.events.0.params.currency'))->toBe('EUR');
+});
+```
+
+Each stored event has an `id`, a `name`, its `params` and the time it was tracked in `at`. To check the other half, request the next page and look for the event in the response:
+
+```php
+$this->get(route('orders.thanks', 1))->assertSee('"name":"purchase"', false);
+$this->get(route('orders.thanks', 1))->assertDontSee('"name":"purchase"', false);   // a reload
+```
+
 ## In the browser
 
 The Blade view is silent. To see what happens, either publish the JavaScript file, which logs every step (see [Installation](installation.md)), or paste this in the console before you submit the form:
@@ -54,7 +79,7 @@ window.dispatchEvent(new CustomEvent('ga:event', {
 }));
 ```
 
-`typeof window.gtag` tells you whether the Google tag is there. When it prints `"undefined"`, the listener drops every event.
+`typeof window.gtag` tells you whether the Google tag is there. When it prints `"undefined"`, events wait in `window.livewireGoogleAnalyticsState.waiting` until it exists.
 
 ## In Google Analytics
 

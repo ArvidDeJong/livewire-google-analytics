@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `trackEventAfterRedirect()`, `trackLeadAfterRedirect()`, `trackNewsletterSignupAfterRedirect()` and
+  `trackCustomEventAfterRedirect()` for an action that ends in a redirect. Livewire fires a dispatched
+  browser event on the page that is going away, so a conversion tracked right before `redirect()` could
+  get lost. These methods keep the event in the session (`livewire-google-analytics.events`) and the
+  listener view on the next page sends it once; a reload sends nothing. Replace `trackEvent()` with
+  the `AfterRedirect` variant in those actions, never call both. The page after the redirect has to
+  include the Blade view: the published JavaScript file cannot read the session. Without a session the
+  event is dispatched as before.
+- `@include('livewire-google-analytics::script', ['queue' => false])` and
+  `window.livewireGoogleAnalytics = { queue: false }` to turn the new queue off.
+
+### Changed
+- **Events that arrive before `window.gtag` exists are no longer dropped.** They wait in memory, at
+  most 50 events and at most 30 minutes, and are sent in the order they were tracked as soon as `gtag`
+  is there. This is how Google's own snippet behaves. On a site where a consent tool loads Google's
+  tag after the visitor agreed, every event tracked before that moment used to be lost, so **your
+  numbers can go up**. Without `gtag` for the whole visit (an ad blocker, no consent) nothing is sent,
+  as before. The listener never pushes to `dataLayer` and never defines `gtag` itself. To keep
+  dropping, use one of the two opt outs above.
+- The publishable JavaScript file logs `[GA4] gtag not available, event is waiting: <name>` for a
+  queued event. `[GA4] gtag not available, skipping event: <name>` is only logged with the queue off.
+- If you published the view or the JavaScript file, publish it again to get the queue and the
+  carried events: `php artisan vendor:publish --tag=livewire-google-analytics-views --force` (or
+  `-js`). A published view from 1.2.0 or older silently ignores `trackEventAfterRedirect()` events.
+
+### Fixed
+- The documentation said an event tracked in the same action as a redirect "depends on the browser"
+  and offered no way to make it arrive. It now describes what Livewire 3 and 4 do and shows the
+  `AfterRedirect` methods.
+
 ## [1.2.0] - 2026-09-21
 
 ### Added

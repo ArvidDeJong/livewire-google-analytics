@@ -18,7 +18,7 @@ class ContactForm extends Component
 }
 ```
 
-The trait adds four `protected` methods. All of them return nothing and none of them throws.
+The trait adds four `protected` methods, and an `…AfterRedirect()` variant of each for an action that ends in a redirect. All of them return nothing and none of them throws.
 
 | Method | GA4 event name | Parameters |
 | --- | --- | --- |
@@ -69,6 +69,38 @@ $this->trackCustomEvent('download_brochure', ['brochure_name' => 'Catalogue']);
 ```
 
 Pass the name without the prefix; `trackCustomEvent('ga_download')` sends `ga_ga_download`.
+
+## Before a redirect
+
+```php
+public function pay(): void
+{
+    $order = $this->cart->checkout();
+
+    $this->trackEventAfterRedirect('purchase', [
+        'transaction_id' => (string) $order->id,
+        'value' => (float) $order->total,
+        'currency' => 'EUR',
+    ]);
+
+    $this->redirectRoute('orders.thanks', $order);
+}
+```
+
+Livewire sends the browser event and the redirect in one response, and fires the event on the page that is about to disappear. Whether Google Analytics still gets it out is up to the browser, and an event that is waiting for `gtag` is certainly gone. The `…AfterRedirect()` methods don't dispatch. They keep the event in the session, and the listener view on the next page sends it, once.
+
+| Method | Same event as |
+| --- | --- |
+| `trackEventAfterRedirect(string $name, array $params = [])` | `trackEvent()` |
+| `trackLeadAfterRedirect(array $params = [])` | `trackLead()` |
+| `trackNewsletterSignupAfterRedirect(array $params = [])` | `trackNewsletterSignup()` |
+| `trackCustomEventAfterRedirect(string $eventName, array $params = [])` | `trackCustomEvent()` |
+
+- **The next page needs the Blade view.** The published JavaScript file is static and cannot read the session. A site that only loads the file either includes the view on the page after the redirect, or does not redirect in the same action.
+- **Use one or the other**, never `trackEvent()` and `trackEventAfterRedirect()` for the same event: it would be counted twice.
+- **The event waits for the next page that renders the view**, whichever page that is, for at most 30 minutes. That also covers a redirect to a payment provider and back. If the action does not redirect after all, the event is sent on the visitor's next page view.
+- **With `redirect(..., navigate: true)` both kinds work.** The window stays, so a normal `trackEvent()` reaches the listener; an `…AfterRedirect()` event arrives with the new page.
+- **Without a session** (a stateless route) there is nowhere to keep the event, and it is dispatched like `trackEvent()`.
 
 ## Where to call them
 

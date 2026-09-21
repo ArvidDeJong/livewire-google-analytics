@@ -12,10 +12,20 @@
     No. The package has no measurement id and no config file, and it does not load `gtag.js`. Put
     Google's own tag in your layout. The listener only calls `window.gtag` when it exists.
 
-- q: What happens when Google Analytics is blocked by an ad blocker or a cookie banner?
+- q: What happens when Google Analytics is blocked by an ad blocker or not loaded yet by a cookie banner?
   a: >-
-    The listener checks `typeof window.gtag` for every event. When `gtag` is not a function the event is
-    dropped: nothing throws and nothing is queued for later. The Livewire action itself is not affected.
+    The listener only calls `window.gtag` when it exists. Until then an event waits in memory, at most
+    50 events and at most 30 minutes, and is sent in order as soon as `gtag` appears, for example after
+    the visitor gave consent. If `gtag` never appears the events disappear with the page. Nothing throws,
+    and `['queue' => false]` on the include turns the waiting off.
+
+- q: How do I track a GA4 event in a Livewire action that redirects?
+  a: >-
+    Use `trackEventAfterRedirect()`, `trackLeadAfterRedirect()`, `trackNewsletterSignupAfterRedirect()` or
+    `trackCustomEventAfterRedirect()`. Livewire fires a dispatched browser event on the page that is
+    going away, so these methods keep the event in the session instead and the listener view on the next
+    page sends it once. That page has to include the Blade view; the published JavaScript file cannot
+    read the session.
 
 - q: Which GA4 events do the helper methods send?
   a: >-
@@ -33,7 +43,8 @@
 - q: Is it safe to put form input in the event parameters?
   a: >-
     Yes. The parameters travel as JSON in the Livewire response and reach `gtag()` as a JavaScript
-    object; no value is written into a script, so quotes or tags in the input cannot break out. Do keep
+    object. Events carried over a redirect are written into the view as JSON with every tag character
+    and quote escaped, so input cannot break out of the script. Do keep
     personal data such as names and e-mail addresses out of the parameters: Google's terms forbid it.
 
 - q: How do I test that a Livewire component tracks an event?
