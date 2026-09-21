@@ -1,7 +1,7 @@
 ---
-title: FAQ
-nav_order: 8
-description: "Short answers about darvis/livewire-google-analytics: what it sends, what it does not load, blocked trackers, double events, safety and testing."
+title: "FAQ"
+nav_order: 9
+description: "Short answers about darvis/livewire-google-analytics: what it is, what it does not load, events before consent, redirects, double events, safety and testing."
 faq: true
 ---
 

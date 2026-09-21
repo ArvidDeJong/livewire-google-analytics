@@ -1,7 +1,7 @@
 ---
-title: How it works
-nav_order: 4
-description: "How an event travels from a Livewire action to gtag(): the ga:event browser event, the listener, and what happens when gtag is missing."
+title: "How it works"
+nav_order: 5
+description: "How an event travels from a Livewire action to gtag(): the ga:event browser event, the queue when gtag is missing, and the session over a redirect."
 ---
 
 # How it works
@@ -12,19 +12,19 @@ Livewire action  ->  ga:event browser event  ->  listener  ->  (queue)  ->  gtag
 
 ## 1. The trait dispatches a browser event
 
-Every method ends in one call:
+`trackEvent()`, `trackLead()`, `trackNewsletterSignup()` and `trackCustomEvent()` all end in one call:
 
 ```php
 $this->dispatch('ga:event', name: $name, params: $params);
 ```
 
-That is Livewire's own `dispatch()`. The event is part of the JSON response of the request, and Livewire fires it in the browser as a `CustomEvent` that bubbles up to `window`. Its `detail` is an object with `name` and `params`.
+That is Livewire's own `dispatch()`. A browser event is a message that JavaScript on the page can listen for. The event is part of the JSON response of the request, and Livewire fires it in the browser as a `CustomEvent` that bubbles up to `window`. Its `detail` is an object with `name` and `params`.
 
-Nothing is sent to Google from the server. The package makes no HTTP request.
+Nothing is sent to Google from the server. The package makes no HTTP request. The `…AfterRedirect()` variants take another road, see section 4.
 
 ## 2. The listener forwards it
 
-The listener is the whole client side of the package. It comes down to this:
+The listener is the client side of the package: the Blade view `livewire-google-analytics::script`, or the published JavaScript file. Its first job comes down to this:
 
 ```js
 window.addEventListener('ga:event', function (event) {
@@ -51,11 +51,13 @@ The listener checks `typeof window.gtag` for every event. When it is not a funct
 - an event that waited longer than **30 minutes** is not sent any more;
 - the listener looks for `gtag` again when the next event arrives and once a second, and sends what is waiting in the order it was tracked. The timer only runs while something is waiting.
 
-This is what Google's own snippet does: its `gtag()` only pushes to `dataLayer`, and what was pushed before `gtag.js` loaded is processed once it loads. The listener does not push to `dataLayer` itself and never defines `gtag`; on a page with only Google Tag Manager that would produce entries GTM does not expect. It only ever calls a `window.gtag` that exists.
+Google's own snippet works in a similar way: its `gtag()` function only pushes to the `dataLayer` array, which `gtag.js` reads once it has loaded. The listener does not push to `dataLayer` itself and never defines `gtag`. It only ever calls a `window.gtag` that exists.
 
-If `gtag` never appears, because of an ad blocker or because the visitor declined, the queue is simply never sent and disappears with the page. Whether an event may be sent after consent was given is decided by your consent setup: the listener calls `gtag()`, and Google's consent mode does the rest.
+If `gtag` never appears, because of an ad blocker or because the visitor declined, the queue is never sent and disappears with the page.
 
-Turn the queue off with `['queue' => false]` on the include or `window.livewireGoogleAnalytics = { queue: false }`, see [Installation](installation.md). Events without `gtag` are then dropped.
+The package does no consent handling. It does not know whether the visitor agreed; it only sees whether `window.gtag` exists. An event that was tracked before the visitor agreed is sent once your consent tool has loaded Google's tag. If you don't want that, turn the queue off.
+
+Turn the queue off with `['queue' => false]` on the include or `window.livewireGoogleAnalytics = { queue: false }`, see [Installation](installation.md). An event that arrives while `gtag` does not exist is then dropped.
 
 Nothing throws, so the Livewire action and the page are not affected.
 
@@ -78,9 +80,9 @@ When `sessionStorage` is missing or throws (private mode in some browsers, stora
 
 Normal events have no id and are never deduplicated.
 
-## Why not `$this->js()`?
+## What it replaces: `gtag()` calls built in PHP
 
-You can call `gtag()` from PHP with `$this->js("gtag('event', ...)")`, but then PHP builds JavaScript source. A value with a quote in it breaks the script, and a value from a visitor can run code in the page. With the browser event the parameters are data from start to end.
+Without the package you would call `gtag()` from a component with Livewire's `$this->js("gtag('event', ...)")`. Then PHP builds JavaScript source: a value with a quote in it breaks the script, and a value from a visitor can run code in the page. With the trait the event name and the parameters are data from start to end.
 
 ## You can dispatch the event yourself
 

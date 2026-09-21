@@ -1,23 +1,32 @@
 # Questions as people ask them to an assistant. Short, factual answers.
 # Rendered on faq.md, in the FAQPage structured data and in llms.txt.
+- q: What is darvis/livewire-google-analytics and what does it replace?
+  a: >-
+    A Laravel package that sends Google Analytics 4 events from Livewire components. It replaces
+    `gtag()` calls that are built as a string in PHP with `$this->js(...)`: a trait dispatches a browser
+    event with the event name and parameters as data, and a listener script in the layout passes it
+    to `gtag()`.
+
 - q: How do I send a Google Analytics 4 event from a Laravel Livewire component?
   a: >-
     Install `darvis/livewire-google-analytics`, put `@include('livewire-google-analytics::script')` once
-    in your layout, add the `TracksAnalytics` trait to the component and call
-    `$this->trackEvent('purchase', ['value' => 25.99])` or `$this->trackLead([...])` in an action. The
-    trait dispatches a `ga:event` browser event and the script forwards it to `gtag('event', ...)`.
+    in your layout, add the `TracksAnalytics` trait to the component and call a method in an action.
+    `trackEvent('purchase', [...])` sends any event, `trackLead()` sends `generate_lead`,
+    `trackNewsletterSignup()` sends `sign_up` with `method` set to `newsletter`, and
+    `trackCustomEvent('download')` sends `ga_download`.
 
-- q: Does darvis/livewire-google-analytics load Google Analytics for me?
+- q: Does darvis/livewire-google-analytics load Google Analytics or handle cookie consent?
   a: >-
-    No. The package has no measurement id and no config file, and it does not load `gtag.js`. Put
-    Google's own tag in your layout. The listener only calls `window.gtag` when it exists.
+    No. The package has no measurement id, no config file and no environment variable, it does not load
+    `gtag.js`, and it does no consent handling. You put Google's own tag in your layout or let your
+    consent tool load it. The listener only calls `window.gtag` when that function exists.
 
-- q: What happens when Google Analytics is blocked by an ad blocker or not loaded yet by a cookie banner?
+- q: What happens to an event when Google Analytics is blocked or not loaded yet by a cookie banner?
   a: >-
-    The listener only calls `window.gtag` when it exists. Until then an event waits in memory, at most
-    50 events and at most 30 minutes, and is sent in order as soon as `gtag` appears, for example after
-    the visitor gave consent. If `gtag` never appears the events disappear with the page. Nothing throws,
-    and `['queue' => false]` on the include turns the waiting off.
+    Until `window.gtag` exists an event waits in memory, at most 50 events and at most 30 minutes, and
+    is sent in order as soon as `gtag` appears, for example after the visitor gave consent. If `gtag`
+    never appears the events disappear with the page. Nothing throws, and `['queue' => false]` on the
+    include turns the waiting off.
 
 - q: How do I track a GA4 event in a Livewire action that redirects?
   a: >-
@@ -27,40 +36,31 @@
     page sends it once. That page has to include the Blade view; the published JavaScript file cannot
     read the session.
 
-- q: What does darvis/livewire-google-analytics store in the browser?
+- q: Why is a Google Analytics event counted twice in my Livewire app?
   a: >-
-    One `sessionStorage` key, `livewire-google-analytics.sent`, with the ids of at most 100 events that
-    were carried over a redirect, so a page that comes back from the browser cache does not send them
-    again. It holds random ids only, no event names, no parameters and nothing about the visitor, and
-    it is gone when the tab closes. The package sets no cookie of its own; the carried events
-    themselves wait in your Laravel session.
+    The usual causes are a tracking call in `render()`, which runs on every request, the same event
+    tracked with both `trackEvent()` and `trackEventAfterRedirect()`, or a published copy of the view or
+    JavaScript file from an older version. Up to 1.1.0 the listener registered again on every
+    `wire:navigate` visit, and up to 1.3.0 a page from the browser cache sent its carried events again;
+    publish the view again with `--force` after an update.
 
-- q: Which GA4 events do the helper methods send?
+- q: Is it safe to put form input in the event parameters, and what does the package store in the browser?
   a: >-
-    `trackLead()` sends `generate_lead`, `trackNewsletterSignup()` sends `sign_up` with `method` set to
-    `newsletter`, `trackCustomEvent('download')` sends `ga_download`, and `trackEvent()` sends the name
-    you give it. The parameters you pass go to GA4 unchanged.
-
-- q: Why is every Google Analytics event sent twice in my Livewire app?
-  a: >-
-    Up to version 1.1.0 the listener registered itself again on every `wire:navigate` visit, and again
-    when both the Blade view and the published JavaScript file were on the page. Later versions listen
-    once per window. Publish the view or the file again if you published them before. A tracking call in
-    `render()` also repeats, because `render()` runs on every request.
-
-- q: Is it safe to put form input in the event parameters?
-  a: >-
-    Yes. The parameters travel as JSON in the Livewire response and reach `gtag()` as a JavaScript
-    object. Events carried over a redirect are written into the view as JSON with every tag character
-    and quote escaped, so input cannot break out of the script. Do keep
-    personal data such as names and e-mail addresses out of the parameters: Google's terms forbid it.
+    Parameters reach the browser as JSON, and events carried over a redirect are written into the view
+    with every tag character and quote escaped, so input cannot break out of the script. The package
+    sets no cookie and stores one `sessionStorage` key, `livewire-google-analytics.sent`, with at most
+    100 random ids of carried events and no event data. Everything in the parameters does end up in
+    your Google Analytics property, so keep personal data out of them.
 
 - q: How do I test that a Livewire component tracks an event?
   a: >-
     Use Livewire's own assertion, no browser needed:
     `Livewire::test(ContactForm::class)->call('submit')->assertDispatched('ga:event', name: 'generate_lead', params: [...])`.
+    For an `AfterRedirect` method call `session()->start()` first and assert on
+    `session('livewire-google-analytics.events.0.name')`.
 
-- q: Which Laravel, Livewire and PHP versions does darvis/livewire-google-analytics support?
+- q: Which Laravel, Livewire and PHP versions does darvis/livewire-google-analytics support, and what does it cost?
   a: >-
-    PHP 8.2 and higher with Laravel 11, 12 or 13 and Livewire 3 or 4. The test suite runs on every
-    combination, on the lowest and the latest dependencies. Sites on Laravel 10 or PHP 8.1 stay on 1.1.x.
+    PHP 8.2 and higher with Laravel 11, 12 or 13 and Livewire 3 or 4. The package is free and MIT
+    licensed and needs a Google Analytics 4 property with its Google tag on the page. Sites on Laravel
+    10 or PHP 8.1 stay on version 1.1.x.

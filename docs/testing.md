@@ -1,17 +1,22 @@
 ---
-title: Testing
-nav_order: 6
-description: "Assert in Pest or PHPUnit that a Livewire component dispatched the ga:event, and check in the browser and in GA4 DebugView that it arrived."
+title: "Testing"
+nav_order: 7
+description: "Test in your own Laravel app that a Livewire component tracks the right GA4 event, with assertDispatched and the session, without a browser or Google."
 ---
 
 # Testing
 
-## In your test suite
+## Test a component that tracks an event
 
-The trait dispatches a Livewire event, so Livewire's own assertions are all you need. No browser and no Google Analytics are involved.
+The trait dispatches a Livewire event, so Livewire's own test helpers are all you need. No browser is involved and nothing is sent to Google: the package makes no request from the server.
+
+`tests/Feature/ContactFormTest.php`, for the component of the [Quick start](quickstart.md), written with Pest:
 
 ```php
+<?php
+
 use App\Livewire\ContactForm;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 it('tracks a lead after the contact form was sent', function () {
@@ -24,7 +29,6 @@ it('tracks a lead after the contact form was sent', function () {
         ->call('submit')
         ->assertDispatched('ga:event', name: 'generate_lead', params: [
             'form_name' => 'contact_form',
-            'lead_type' => 'contact',
         ]);
 });
 
@@ -36,9 +40,11 @@ it('tracks nothing when the form is rejected', function () {
 });
 ```
 
-`params` is compared as a whole. Assert on the complete array your component sends, including `method` for `trackNewsletterSignup()`.
+`Livewire::test()` runs the component without a browser, `call('submit')` runs the action, and `assertDispatched()` checks the browser event that the trait added to the response. `Mail::fake()` keeps the test from sending mail.
 
-### An event that is carried over a redirect
+`params` is compared as a whole. Assert on the complete array your component sends, including `'method' => 'newsletter'` for `trackNewsletterSignup()`.
+
+## Test an event that is carried over a redirect
 
 The `…AfterRedirect()` methods put the event in the session. `Livewire::test()` sends its requests without middleware, so nothing starts the session; start it yourself, or the trait falls back to dispatching the event.
 
@@ -63,19 +69,19 @@ $this->get(route('orders.thanks', 1))->assertSee('"name":"purchase"', false);
 $this->get(route('orders.thanks', 1))->assertDontSee('"name":"purchase"', false);   // a reload
 ```
 
-## In the browser
+## Check by hand in the browser
 
-The Blade view is silent. To see what happens, either publish the JavaScript file, which logs every step (see [Installation](installation.md)), or paste this in the console before you submit the form:
+"Check that it works" on [Installation](installation.md) walks through this. In short: the Blade view writes nothing to the console. To see what happens, either load the published JavaScript file, which logs every step, or paste this in the console before you submit the form:
 
 ```js
 window.addEventListener('ga:event', (event) => console.log('ga:event', event.detail));
 ```
 
-You can also send a test event by hand. It should show up in GA4 when the listener and your Google tag are in place:
+You can also send a test event by hand. With `debug_mode` it shows up in DebugView when the listener and your Google tag are in place:
 
 ```js
 window.dispatchEvent(new CustomEvent('ga:event', {
-    detail: { name: 'test_event', params: { source: 'console' } },
+    detail: { name: 'test_event', params: { debug_mode: true } },
 }));
 ```
 
@@ -83,8 +89,12 @@ After a carried event, `sessionStorage.getItem('livewire-google-analytics.sent')
 
 `typeof window.gtag` tells you whether the Google tag is there. When it prints `"undefined"`, events wait in `window.livewireGoogleAnalyticsState.waiting` until it exists.
 
-## In Google Analytics
+## See the event in Google Analytics
 
-- **Realtime** shows an event within seconds to a minute.
-- **Admin, DebugView** shows each event with its parameters. Turn debug mode on with the Google Analytics Debugger extension for Chrome, or with `gtag('config', 'G-XXXXXXX', { debug_mode: true })` in your tag.
-- A custom parameter only appears in the standard reports after you register it as a custom dimension in GA4. That is a GA4 setting, not something the package can do.
+**Admin**, then **DebugView** under "Data display", shows each event of a browser in debug mode, with its parameters. Google's tag is in debug mode when you open the site through [Tag Assistant](https://tagassistant.google.com), when the tag is configured with `gtag('config', 'G-XXXXXXX', { debug_mode: true })`, or for one event when you add `'debug_mode' => true` to its parameters:
+
+```php
+$this->trackLead(['form_name' => 'contact_form', 'debug_mode' => true]);
+```
+
+Remove it again when you are done. Which parameters show up in the other GA4 reports is a setting of your GA4 property, not of the package.
