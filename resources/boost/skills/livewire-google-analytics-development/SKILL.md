@@ -14,16 +14,23 @@ Use this skill when a Livewire component in an application with `darvis/livewire
 1. A component with the `TracksAnalytics` trait calls `trackEvent()` or one of the helpers.
 2. The trait calls Livewire's `$this->dispatch('ga:event', name: $name, params: $params)`. The event is part of the JSON response of that request.
 3. Livewire fires a `CustomEvent` named `ga:event` that bubbles to `window`, with `detail.name` and `detail.params`.
-4. The listener from `@include('livewire-google-analytics::script')` calls `window.gtag('event', name, params || {})`.
+4. The listener from `@include('livewire-google-analytics::script')` calls `window.gtag('event', name, params || {})`, or keeps the event in a queue until `window.gtag` exists.
+5. An `…AfterRedirect()` method skips steps 2 and 3: it stores the event in the session under `livewire-google-analytics.events`, and the Blade view on the next page pulls it and hands it to the same queue.
 
 The server sends nothing to Google. The package has no config file, no measurement id and no environment variable, and it does not load `gtag.js`.
 
 | Situation | What happens |
 | --- | --- |
-| `window.gtag` is not a function | the event is dropped, not queued; nothing throws |
+| `window.gtag` is not a function yet | the event waits: at most 50 events, at most 30 minutes, sent in order when `gtag` appears (checked on the next event and once a second while something waits) |
+| `window.gtag` never appears | the waiting events are gone when the page unloads; nothing throws |
+| The queue is off (`['queue' => false]` on the include, or `window.livewireGoogleAnalytics = { queue: false }`) | an event without `gtag` is dropped |
+| `trackEvent()` and a full page `redirect()` in one action | the event fires on the page that is going away; it may or may not reach Google |
+| `trackEventAfterRedirect()` | not dispatched; sent once by the Blade view on the next page that renders it, within 30 minutes |
+| `trackEventAfterRedirect()` without a started session | dispatched like `trackEvent()` |
+| `trackEventAfterRedirect()` and the next page only loads the published file | the event stays in the session until a page with the view is rendered |
 | The event has no `name`, or an empty one | ignored |
 | `params` is missing | `gtag()` gets an empty object |
-| The script runs a second time (`wire:navigate`, or the view and the published file together) | it returns at once; one listener per window, flag `window.livewireGoogleAnalyticsListening` |
+| The script runs a second time (`wire:navigate`, or the view and the published file together) | one listener and one queue per window: `window.livewireGoogleAnalyticsListening` and `window.livewireGoogleAnalyticsState` |
 | The listener is not in the layout | the browser event fires and nothing listens |
 
 ## The methods
@@ -36,6 +43,8 @@ All `protected`, all return `void`, none throws.
 | `trackLead(array $params = [])` | `generate_lead` | unchanged |
 | `trackNewsletterSignup(array $params = [])` | `sign_up` | `['method' => 'newsletter']` merged with the params; your own `method` wins |
 | `trackCustomEvent(string $eventName, array $params = [])` | `'ga_'.$eventName` | unchanged |
+
+Each has an `…AfterRedirect()` variant with the same arguments, event name and params: `trackEventAfterRedirect()`, `trackLeadAfterRedirect()`, `trackNewsletterSignupAfterRedirect()`, `trackCustomEventAfterRedirect()`.
 
 The package does not validate names or params.
 
@@ -76,6 +85,10 @@ $this->trackEvent('purchase', [
     'currency' => 'EUR',
 ]);
 
+// A purchase followed by a redirect: carried to the next page, which must include the Blade view.
+$this->trackEventAfterRedirect('purchase', ['transaction_id' => (string) $order->id, 'currency' => 'EUR']);
+$this->redirectRoute('orders.thanks', $order);
+
 // A project specific event: arrives as ga_download_brochure.
 $this->trackCustomEvent('download_brochure', ['brochure_name' => $brochure->title]);
 ```
@@ -86,7 +99,10 @@ $this->trackCustomEvent('download_brochure', ['brochure_name' => $brochure->titl
 - **Never track in `render()`**, in `updated()` hooks or in a loop: the event is sent on every request or iteration.
 - **Track below `validate()` and below the work.** `validate()` throws, so a rejected form is never counted.
 - **Don't make the methods public** and don't wrap them in a public method that takes the event name or params as arguments: every public Livewire method can be called from the browser.
-- **A redirect in the same action** puts the event and the navigation in one response. Track on the following page when the event matters.
+- **A full page redirect in the same action**: use the `…AfterRedirect()` variant. Livewire fires a dispatched event on the page that is going away.
+- **Never track one event with both variants.** The normal one is dispatched, the other is carried, and Google counts two.
+- **The carried event needs the Blade view on the next page.** The published file is static and cannot read the session.
+- **Never push to `dataLayer` or define `window.gtag` to make events "arrive earlier".** The listener already queues; a home made `gtag` on a page with only Google Tag Manager produces entries GTM does not expect.
 - **A published view or file is a copy.** After a package update with a fix in the listener, publish again with `--force` or remove the copy.
 - **Don't look for a config file.** There is none; the measurement id lives in the host app's Google tag.
 - **No personal data in params**: no names, e-mail addresses, phone numbers or typed text.
@@ -110,4 +126,20 @@ Livewire::test(ContactForm::class)
 
 - `params` is compared as a whole array; include `method` for `trackNewsletterSignup()`.
 - No browser, no Google Analytics and no HTTP fake are needed: the package makes no request.
+- `Livewire::test()` runs without middleware, so there is no started session and an `…AfterRedirect()` method falls back to dispatching. Start the session to test the carried event:
+
+```php
+session()->start();
+
+Livewire::test(Checkout::class)
+    ->call('completePurchase')
+    ->assertRedirect(route('orders.thanks'))
+    ->assertNotDispatched('ga:event');
+
+expect(session('livewire-google-analytics.events.0.name'))->toBe('purchase');
+
+$this->get(route('orders.thanks'))->assertSee('"name":"purchase"', false);      // sent by the view
+$this->get(route('orders.thanks'))->assertDontSee('"name":"purchase"', false);  // once
+```
+
 - In the browser, log the raw event with `window.addEventListener('ga:event', e => console.log(e.detail, typeof window.gtag))`.

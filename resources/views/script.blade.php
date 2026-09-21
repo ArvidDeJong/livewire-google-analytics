@@ -5,22 +5,127 @@
 
     Usage in layout:
     @include('livewire-google-analytics::script')
+
+    Without the queue for events that arrive before gtag exists:
+    @include('livewire-google-analytics::script', ['queue' => false])
+
+    Keep the code between core:start and core:end the same as in resources/js/google-analytics.js.
+    Events tracked right before a redirect come out of the session here, once.
+    Nothing is written into this script as a string: a value from PHP is JSON with hex escapes.
 --}}
 <script>
 (function () {
-    /* wire:navigate runs this script again on every visit while the window stays: listen once. */
-    if (window.livewireGoogleAnalyticsListening) return;
-    window.livewireGoogleAnalyticsListening = true;
+    var carried = {{ \Darvis\LivewireGoogleAnalytics\Support\CarriedEvents::pullForScript() }};
+    var log = function () {};
 
-    function fireGaEvent(name, params) {
-        if (typeof window.gtag !== 'function') return;
-        window.gtag('event', name, params || {});
+    if ({{ \Illuminate\Support\Js::from(($queue ?? true) === false) }}) {
+        (window.livewireGoogleAnalytics = window.livewireGoogleAnalytics || {}).queue = false;
     }
 
-    window.addEventListener('ga:event', function (event) {
-        const detail = event.detail || {};
-        if (!detail.name) return;
-        fireGaEvent(detail.name, detail.params);
+    /* core:start */
+    var MAX_WAITING = 50;
+    var MAX_AGE = 30 * 60 * 1000;
+    var RETRY_EVERY = 1000;
+
+    /* On window, because wire:navigate runs this script again on every visit while the window stays. */
+    var state = window.livewireGoogleAnalyticsState = window.livewireGoogleAnalyticsState || { waiting: [], timer: null, carried: {} };
+
+    function gtagIsThere() {
+        return typeof window.gtag === 'function';
+    }
+
+    function queueIsOn() {
+        var settings = window.livewireGoogleAnalytics;
+
+        return !(settings && settings.queue === false);
+    }
+
+    function send(name, params) {
+        window.gtag('event', name, params || {});
+        log('debug', '[GA4] Event tracked:', name, params);
+    }
+
+    function stopTimer() {
+        if (state.timer !== null) {
+            clearInterval(state.timer);
+            state.timer = null;
+        }
+    }
+
+    function dropExpired() {
+        var oldest = Date.now() - MAX_AGE;
+
+        state.waiting = state.waiting.filter(function (item) {
+            return item.at >= oldest;
+        });
+    }
+
+    /* Send what is waiting, oldest first. Taken out of the queue before sending, so nothing is sent twice. */
+    function flush() {
+        dropExpired();
+
+        if (state.waiting.length === 0) {
+            stopTimer();
+            return;
+        }
+
+        if (!gtagIsThere()) return;
+
+        var waiting = state.waiting.splice(0);
+        stopTimer();
+
+        waiting.forEach(function (item) {
+            send(item.name, item.params);
+        });
+    }
+
+    function track(name, params) {
+        flush();
+
+        if (gtagIsThere()) {
+            send(name, params);
+            return;
+        }
+
+        if (!queueIsOn()) {
+            log('debug', '[GA4] gtag not available, skipping event:', name);
+            return;
+        }
+
+        state.waiting.push({ name: name, params: params, at: Date.now() });
+        state.waiting.splice(0, Math.max(0, state.waiting.length - MAX_WAITING));
+        log('debug', '[GA4] gtag not available, event is waiting:', name);
+
+        /* The only timer, and it only runs while something is waiting. */
+        if (state.timer === null) {
+            state.timer = setInterval(flush, RETRY_EVERY);
+        }
+    }
+
+    if (!window.livewireGoogleAnalyticsListening) {
+        window.livewireGoogleAnalyticsListening = true;
+
+        window.addEventListener('ga:event', function (event) {
+            var detail = event.detail || {};
+
+            if (!detail.name) {
+                log('warn', '[GA4] Event dispatched without name:', detail);
+                return;
+            }
+
+            track(detail.name, detail.params);
+        });
+
+        log('debug', '[GA4] Livewire Google Analytics listener initialized');
+    }
+
+    /* A page that wire:navigate puts back from its cache runs this script again: send a carried event once. */
+    carried.forEach(function (item) {
+        if (!item || !item.name || state.carried[item.id]) return;
+
+        state.carried[item.id] = true;
+        track(item.name, item.params);
     });
+    /* core:end */
 })();
 </script>

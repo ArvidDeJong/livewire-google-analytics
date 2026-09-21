@@ -18,7 +18,7 @@ The service provider is discovered automatically. There is no config file, no mi
 
 The package does **not** load Google Analytics and knows nothing about your measurement id. Put the tag that Google gives you (Admin, Data streams, your stream, "View tag instructions") in the `<head>` of your layout, or load it through your consent tool.
 
-Google's snippet defines `window.gtag` inline, so the function exists before `gtag.js` itself has loaded. That matters: the listener drops an event when `window.gtag` is not a function, see [How it works](concepts.md).
+Google's snippet defines `window.gtag` inline, so the function exists before `gtag.js` itself has loaded. When a consent tool adds the snippet later, the listener keeps the events that were tracked before that moment and sends them once `window.gtag` exists, see [How it works](concepts.md).
 
 ## 3. Include the listener
 
@@ -30,7 +30,21 @@ Add the view **once**, in the layout that every page with a tracked component us
 </body>
 ```
 
-The view renders one inline `<script>` that listens for the `ga:event` browser event on `window`. It contains nothing from your application, so it is the same for every visitor and every page.
+The view renders one inline `<script>` that listens for the `ga:event` browser event on `window`. The only data it ever contains are events you tracked with an `…AfterRedirect()` method on the previous page, written as escaped JSON; see [Tracking events](usage.md).
+
+### Without the queue
+
+Events that arrive before `window.gtag` exists wait, at most 50 of them and at most 30 minutes. If you would rather drop them, as versions up to 1.2.0 did, turn the queue off in the include:
+
+```blade
+@include('livewire-google-analytics::script', ['queue' => false])
+```
+
+or, for the published file, before the script runs:
+
+```html
+<script>window.livewireGoogleAnalytics = { queue: false };</script>
+```
 
 The listener registers once per window. With `wire:navigate` Livewire runs a script in the body again on every visit; the listener notices it is already there and does nothing.
 
@@ -46,13 +60,14 @@ php artisan vendor:publish --tag=livewire-google-analytics-js
 <script src="/vendor/livewire-google-analytics/google-analytics.js" defer></script>
 ```
 
-The file is copied to `public/vendor/livewire-google-analytics/google-analytics.js`. It does the same as the view and also writes to the browser console, which the view does not:
+The file is copied to `public/vendor/livewire-google-analytics/google-analytics.js`. It listens and queues exactly like the view, with two differences. It is static, so it cannot send the events of the `…AfterRedirect()` methods: those need the Blade view on the page after the redirect. And it writes to the browser console, which the view does not:
 
 | Message | Level | When |
 | --- | --- | --- |
 | `[GA4] Livewire Google Analytics listener initialized` | debug | the script ran |
 | `[GA4] Event tracked: <name> <params>` | debug | an event was handed to `gtag()` |
-| `[GA4] gtag not available, skipping event: <name>` | debug | `window.gtag` is not a function |
+| `[GA4] gtag not available, event is waiting: <name>` | debug | `window.gtag` is not a function yet; the event is queued |
+| `[GA4] gtag not available, skipping event: <name>` | debug | the same, with the queue turned off |
 | `[GA4] Event dispatched without name: <detail>` | warn | the event had no `name` |
 
 Chrome hides the `debug` level until you enable "Verbose" in the console's level filter.
