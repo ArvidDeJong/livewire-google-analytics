@@ -23,6 +23,8 @@
     var MAX_WAITING = 50;
     var MAX_AGE = 30 * 60 * 1000;
     var RETRY_EVERY = 1000;
+    var SENT_KEY = 'livewire-google-analytics.sent';
+    var MAX_SENT_IDS = 100;
 
     /* On window, because wire:navigate runs this script again on every visit while the window stays. */
     var state = window.livewireGoogleAnalyticsState = window.livewireGoogleAnalyticsState || { waiting: [], timer: null, carried: {} };
@@ -116,11 +118,63 @@
         log('debug', '[GA4] Livewire Google Analytics listener initialized');
     }
 
-    /* A page that wire:navigate puts back from its cache runs this script again: send a carried event once. */
-    carried.forEach(function (item) {
-        if (!item || !item.name || state.carried[item.id]) return;
+    /*
+     * A carried event is sent once, although the page that holds it can run again: wire:navigate puts a
+     * cached page back (the window stays, state.carried knows the id), and the browser can take the
+     * page from its HTTP cache or bfcache after a full load (the window is new, sessionStorage knows it).
+     * Only ids are stored, never a name or a parameter. sessionStorage can be missing or throw (private
+     * mode, storage turned off, a full quota, a sandboxed iframe); that must never reach the page.
+     */
+    /* null: the storage cannot be used. An empty list: it can, and holds nothing we understand. */
+    function readSentIds() {
+        var raw;
+        var ids;
 
-        state.carried[item.id] = true;
+        try {
+            raw = window.sessionStorage.getItem(SENT_KEY);
+        } catch (error) {
+            return null;
+        }
+
+        try {
+            ids = JSON.parse(raw);
+        } catch (error) {
+            ids = null;
+        }
+
+        return Array.isArray(ids) ? ids.filter(function (id) {
+            return typeof id === 'string';
+        }) : [];
+    }
+
+    function rememberSentId(id) {
+        var ids = readSentIds();
+
+        if (ids === null) return;
+
+        ids.push(id);
+
+        try {
+            window.sessionStorage.setItem(SENT_KEY, JSON.stringify(ids.slice(-MAX_SENT_IDS)));
+        } catch (error) {
+            /* state.carried still knows the id for as long as this window lives. */
+        }
+    }
+
+    /* Remembered when the event is accepted, not when gtag sends it: a reload while it waits must not queue it again. */
+    carried.forEach(function (item) {
+        if (!item || !item.name) return;
+
+        if (typeof item.id === 'string') {
+            var known = state.carried[item.id] || (readSentIds() || []).indexOf(item.id) !== -1;
+
+            state.carried[item.id] = true;
+
+            if (known) return;
+
+            rememberSentId(item.id);
+        }
+
         track(item.name, item.params);
     });
     /* core:end */
