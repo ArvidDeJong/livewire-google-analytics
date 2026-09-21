@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-09-21
+
 ### Fixed
 - **An event carried over a redirect could be sent again when the browser took the page from its
   cache after a full page load**, for example with the back button on a site that lets the browser
@@ -116,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Support for Livewire 3 & 4
 - PHP 8.1+ support
 
-[Unreleased]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ArvidDeJong/livewire-google-analytics/compare/v1.0.0...v1.1.0
