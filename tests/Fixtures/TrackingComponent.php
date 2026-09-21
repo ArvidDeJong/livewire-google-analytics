@@ -63,6 +63,36 @@ class TrackingComponent extends Component
         $this->trackEvent('login', ['method' => 'email']);
     }
 
+    public function purchaseThenRedirect(): void
+    {
+        $this->trackEvent('purchase', ['transaction_id' => 'T1']);
+
+        $this->redirect('/thanks');
+    }
+
+    public function carriedPurchase(bool $navigate = false): void
+    {
+        $this->trackEventAfterRedirect('purchase', ['transaction_id' => 'T2', 'value' => 25.99]);
+
+        $this->redirect('/thanks', navigate: $navigate);
+    }
+
+    public function carriedHelpers(): void
+    {
+        $this->trackLeadAfterRedirect(['form_name' => 'quote']);
+        $this->trackNewsletterSignupAfterRedirect(['source' => 'footer']);
+        $this->trackCustomEventAfterRedirect('download_file');
+
+        $this->redirect('/thanks');
+    }
+
+    public function carriedLocation(): void
+    {
+        $this->trackLeadAfterRedirect(['location' => $this->location]);
+
+        $this->redirect('/thanks');
+    }
+
     public function render(): string
     {
         return '<div>Tracking component</div>';

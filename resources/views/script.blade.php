@@ -10,11 +10,12 @@
     @include('livewire-google-analytics::script', ['queue' => false])
 
     Keep the code between core:start and core:end the same as in resources/js/google-analytics.js.
-    Nothing is written into this script as a string: a value from PHP goes through Js::from().
+    Events tracked right before a redirect come out of the session here, once.
+    Nothing is written into this script as a string: a value from PHP is JSON with hex escapes.
 --}}
 <script>
 (function () {
-    var carried = [];
+    var carried = {{ \Darvis\LivewireGoogleAnalytics\Support\CarriedEvents::pullForScript() }};
     var log = function () {};
 
     if ({{ \Illuminate\Support\Js::from(($queue ?? true) === false) }}) {
@@ -27,7 +28,7 @@
     var RETRY_EVERY = 1000;
 
     /* On window, because wire:navigate runs this script again on every visit while the window stays. */
-    var state = window.livewireGoogleAnalyticsState = window.livewireGoogleAnalyticsState || { waiting: [], timer: null };
+    var state = window.livewireGoogleAnalyticsState = window.livewireGoogleAnalyticsState || { waiting: [], timer: null, carried: {} };
 
     function gtagIsThere() {
         return typeof window.gtag === 'function';
@@ -118,8 +119,12 @@
         log('debug', '[GA4] Livewire Google Analytics listener initialized');
     }
 
+    /* A page that wire:navigate puts back from its cache runs this script again: send a carried event once. */
     carried.forEach(function (item) {
-        if (item && item.name) track(item.name, item.params);
+        if (!item || !item.name || state.carried[item.id]) return;
+
+        state.carried[item.id] = true;
+        track(item.name, item.params);
     });
     /* core:end */
 })();

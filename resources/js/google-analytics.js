@@ -25,7 +25,7 @@
     var RETRY_EVERY = 1000;
 
     /* On window, because wire:navigate runs this script again on every visit while the window stays. */
-    var state = window.livewireGoogleAnalyticsState = window.livewireGoogleAnalyticsState || { waiting: [], timer: null };
+    var state = window.livewireGoogleAnalyticsState = window.livewireGoogleAnalyticsState || { waiting: [], timer: null, carried: {} };
 
     function gtagIsThere() {
         return typeof window.gtag === 'function';
@@ -116,8 +116,12 @@
         log('debug', '[GA4] Livewire Google Analytics listener initialized');
     }
 
+    /* A page that wire:navigate puts back from its cache runs this script again: send a carried event once. */
     carried.forEach(function (item) {
-        if (item && item.name) track(item.name, item.params);
+        if (!item || !item.name || state.carried[item.id]) return;
+
+        state.carried[item.id] = true;
+        track(item.name, item.params);
     });
     /* core:end */
 })();
