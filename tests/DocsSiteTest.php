@@ -168,8 +168,8 @@ test('every link to the source points at GitHub, because the site has no src dir
 test('the config holds the package facts and the sitemap plugin', function () {
     expect(file_get_contents(docsPath('_config.yml')))
         ->toContain('- jekyll-sitemap')
-        ->toContain('name: darvis/laravel-google-translate')
-        ->toContain('baseurl: /laravel-google-translate')
+        ->toContain('name: darvis/livewire-google-analytics')
+        ->toContain('baseurl: /livewire-google-analytics')
         ->toContain('company: ARVID.NL')
         ->toContain('url: https://arvid.nl')
         ->not->toContain('footer_content');
