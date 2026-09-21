@@ -26,6 +26,8 @@ The server sends nothing to Google. The package has no config file, no measureme
 | The queue is off (`['queue' => false]` on the include, or `window.livewireGoogleAnalytics = { queue: false }`) | an event without `gtag` is dropped |
 | `trackEvent()` and a full page `redirect()` in one action | the event fires on the page that is going away; it may or may not reach Google |
 | `trackEventAfterRedirect()` | not dispatched; sent once by the Blade view on the next page that renders it, within 30 minutes |
+| The page with carried events runs again (`wire:navigate` back button, HTTP cache or bfcache after a full load) | not sent again: the ids are on `window` and in `sessionStorage` under `livewire-google-analytics.sent` |
+| `sessionStorage` is missing or throws | no error; only the `window` list dedupes, which a full page load clears |
 | `trackEventAfterRedirect()` without a started session | dispatched like `trackEvent()` |
 | `trackEventAfterRedirect()` and the next page only loads the published file | the event stays in the session until a page with the view is rendered |
 | The event has no `name`, or an empty one | ignored |
@@ -102,6 +104,8 @@ $this->trackCustomEvent('download_brochure', ['brochure_name' => $brochure->titl
 - **A full page redirect in the same action**: use the `…AfterRedirect()` variant. Livewire fires a dispatched event on the page that is going away.
 - **Never track one event with both variants.** The normal one is dispatched, the other is carried, and Google counts two.
 - **The carried event needs the Blade view on the next page.** The published file is static and cannot read the session.
+- **A carried event counted twice** almost always means a view published with 1.3.0 or older in `resources/views/vendor/livewire-google-analytics`: it lacks the `sessionStorage` dedupe for a page that comes back from the browser cache. Publish again with `--force` or delete the copy. Don't build a second dedupe in the host app.
+- **Don't write to `livewire-google-analytics.sent` in `sessionStorage`** and don't put event data there. The listener keeps the ids of accepted carried events in it (at most 100, ids only). An id is stored when the event enters the queue, so an event that was still waiting for `gtag` when its cached page was reloaded is not sent again; that loss is accepted.
 - **Never push to `dataLayer` or define `window.gtag` to make events "arrive earlier".** The listener already queues; a home made `gtag` on a page with only Google Tag Manager produces entries GTM does not expect.
 - **A published view or file is a copy.** After a package update with a fix in the listener, publish again with `--force` or remove the copy.
 - **Don't look for a config file.** There is none; the measurement id lives in the host app's Google tag.

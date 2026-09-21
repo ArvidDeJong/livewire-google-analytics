@@ -5,6 +5,13 @@ way to make an event name or a parameter run as script counts as a security issu
 events the view writes into its script after a redirect: they are JSON with every tag character and
 quote escaped, and a way around that escaping is a vulnerability.
 
+## What the package stores in the browser
+
+One `sessionStorage` key, `livewire-google-analytics.sent`: a JSON list of at most 100 random ids of
+events that were carried over a redirect. No event name, no parameter and nothing about the visitor
+is stored there, and the package sets no cookie. A way to make event data end up in browser storage
+counts as a security issue.
+
 ## Supported versions
 
 Only the latest minor release of 1.x receives security fixes. Upgrade before reporting.

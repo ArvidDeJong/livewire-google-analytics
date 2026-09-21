@@ -79,6 +79,8 @@ window.dispatchEvent(new CustomEvent('ga:event', {
 }));
 ```
 
+After a carried event, `sessionStorage.getItem('livewire-google-analytics.sent')` shows the ids the listener has accepted in this tab. To make a page send its carried events again while you are testing, remove that key and do a full reload of a cached copy; a normal reload asks the server, which hands the events out only once.
+
 `typeof window.gtag` tells you whether the Google tag is there. When it prints `"undefined"`, events wait in `window.livewireGoogleAnalyticsState.waiting` until it exists.
 
 ## In Google Analytics

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **An event carried over a redirect could be sent again when the browser took the page from its
+  cache after a full page load**, for example with the back button on a site that lets the browser
+  cache its HTML. The view only remembered the ids of sent events on `window`, which a full page load
+  clears. It now also keeps them in `sessionStorage` under `livewire-google-analytics.sent`: ids
+  only, the most recent 100, per tab, gone when the tab closes. When `sessionStorage` is missing or
+  throws, the listener falls back to the `window` list without an error. An event that was still
+  waiting for `gtag` when its cached page was reloaded is not queued a second time. Nothing to do,
+  unless you published the view: a published copy does not get the fix, so publish it again with
+  `php artisan vendor:publish --tag=livewire-google-analytics-views --force`. Do the same for a
+  published JavaScript file (`--tag=livewire-google-analytics-js --force`), so both scripts stay the
+  same version.
+
 ## [1.3.0] - 2026-09-21
 
 ### Added

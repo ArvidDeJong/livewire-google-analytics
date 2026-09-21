@@ -40,9 +40,9 @@ function nodeIsMissing(): bool
  * @param  list<string>  $scripts
  * @param  list<array{0: string, 1: mixed}>  $steps
  * @param  array<string, mixed>|null  $settings
- * @return array{listens_to: list<string>, calls: list<array<int, mixed>>, errors: list<string>, messages: list<array<int, mixed>>, timers: int}
+ * @return array{listens_to: list<string>, calls: list<array<int, mixed>>, errors: list<string>, messages: list<array<int, mixed>>, timers: int, stored: array<string, string>}
  */
-function runListener(array $scripts, array $steps, ?array $settings = null): array
+function runListener(array $scripts, array $steps, ?array $settings = null, string $storage = 'memory'): array
 {
     $files = [];
 
@@ -52,7 +52,7 @@ function runListener(array $scripts, array $steps, ?array $settings = null): arr
     }
 
     $scenario = (string) tempnam(sys_get_temp_dir(), 'ga-scenario-');
-    file_put_contents($scenario, json_encode(['scripts' => $files, 'settings' => $settings, 'steps' => $steps], JSON_THROW_ON_ERROR));
+    file_put_contents($scenario, json_encode(['scripts' => $files, 'settings' => $settings, 'storage' => $storage, 'steps' => $steps], JSON_THROW_ON_ERROR));
 
     try {
         $process = new Process(['node', packagePath('tests/Fixtures/run-listener.js'), $scenario]);
