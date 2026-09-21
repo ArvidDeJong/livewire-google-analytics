@@ -27,6 +27,14 @@
     page sends it once. That page has to include the Blade view; the published JavaScript file cannot
     read the session.
 
+- q: What does darvis/livewire-google-analytics store in the browser?
+  a: >-
+    One `sessionStorage` key, `livewire-google-analytics.sent`, with the ids of at most 100 events that
+    were carried over a redirect, so a page that comes back from the browser cache does not send them
+    again. It holds random ids only, no event names, no parameters and nothing about the visitor, and
+    it is gone when the tab closes. The package sets no cookie of its own; the carried events
+    themselves wait in your Laravel session.
+
 - q: Which GA4 events do the helper methods send?
   a: >-
     `trackLead()` sends `generate_lead`, `trackNewsletterSignup()` sends `sign_up` with `method` set to

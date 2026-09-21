@@ -40,6 +40,12 @@ window.addEventListener('ga:event', (event) => console.log('ga:event', event.det
 - The tracking call is in `render()`, in a lifecycle hook such as `updated()`, or inside a loop.
 - The Google tag is on the page twice, for example once in the layout and once through Google Tag Manager. Then GA4 counts `page_view` twice as well.
 
+## An event after a redirect is counted twice
+
+- The same event is tracked with `trackEvent()` and with `trackEventAfterRedirect()`. Use one of them.
+- You published the view with version 1.3.0 or older and it is still in `resources/views/vendor/livewire-google-analytics`. Up to 1.3.0 a page that the browser took from its cache after a full page load, for example with the back button, sent its carried events again. The current view remembers the ids in `sessionStorage`; your copy does not. Publish it again with `--force` or delete the copy. A published JavaScript file never holds carried events, so it cannot cause this; publish it again anyway, so both scripts stay the same version.
+- `sessionStorage` is not available in that browser (storage turned off, a sandboxed iframe) **and** your pages are cacheable. Then only the `window` list protects, which a full page load clears. Laravel sends `Cache-Control: no-cache, private` by default, and with that header the browser asks the server again and gets a page without the events.
+
 ## Numbers went up after an update
 
 In versions after 1.2.0, events that arrive before `window.gtag` exists are no longer lost, and neither are events tracked with an `…AfterRedirect()` method. On a site with a consent tool that means more events than before; they were always there, they just never reached Google. `['queue' => false]` on the include brings the old behaviour back.

@@ -65,6 +65,19 @@ An action that redirects gets a response with both the browser event and the red
 
 The `…AfterRedirect()` methods of the trait therefore don't dispatch. They store the event in the session under `livewire-google-analytics.events`. The Blade view on the next page takes the events out of the session, so a reload does not send them again, and writes them into its script as JSON in which every `<`, `>`, `&` and quote is escaped. From there they go through the same queue as every other event.
 
+### Sent once, whatever the browser does with the page
+
+The server hands the events out once, but the page that holds them can run again without asking the server: `wire:navigate` puts a cached page back on the back button, and the browser can take a page from its HTTP cache or its back/forward cache after a full page load. So every carried event has an id, and the listener remembers the ids it accepted in two places:
+
+- on `window`, for the `wire:navigate` case, where the window stays;
+- in `sessionStorage`, under the key `livewire-google-analytics.sent`, for a full page load, where the window is new. It holds **only ids**, the most recent 100, never an event name or a parameter. `sessionStorage` belongs to one tab, which fits: a carried event belongs to the tab that was redirected.
+
+An id is remembered when the event is accepted into the queue, not when `gtag` sends it. Otherwise a reload while the event waits for `gtag` would queue it again on every reload. The other side of that choice: an event that was accepted, never sent because `gtag` never appeared, and whose page is then reloaded from the cache, is lost. That is the same outcome as an event that waited longer than 30 minutes.
+
+When `sessionStorage` is missing or throws (private mode in some browsers, storage turned off, a full quota, a sandboxed iframe), the listener carries on with the `window` list alone and reports nothing.
+
+Normal events have no id and are never deduplicated.
+
 ## Why not `$this->js()`?
 
 You can call `gtag()` from PHP with `$this->js("gtag('event', ...)")`, but then PHP builds JavaScript source. A value with a quote in it breaks the script, and a value from a visitor can run code in the page. With the browser event the parameters are data from start to end.
