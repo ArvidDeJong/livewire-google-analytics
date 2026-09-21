@@ -1,86 +1,12 @@
 ---
-title: Examples
-nav_order: 5
-description: "Complete Livewire components that track a contact form lead, a newsletter signup, a purchase before a redirect and a file download."
+title: "Examples"
+nav_order: 6
+description: "Livewire actions that track a newsletter signup, a purchase with and without a redirect, a file download and a step in a longer form with GA4 events."
 ---
 
 # Examples
 
-Every example assumes the listener is in your layout, see [Installation](installation.md).
-
-## Contact form
-
-```php
-namespace App\Livewire;
-
-use App\Mail\ContactMail;
-use Darvis\LivewireGoogleAnalytics\Traits\TracksAnalytics;
-use Illuminate\Support\Facades\Mail;
-use Livewire\Component;
-
-class ContactForm extends Component
-{
-    use TracksAnalytics;
-
-    public string $name = '';
-
-    public string $email = '';
-
-    public string $message = '';
-
-    public bool $success = false;
-
-    public function submit(): void
-    {
-        $validated = $this->validate([
-            'name' => 'required|min:2|max:100',
-            'email' => 'required|email|max:100',
-            'message' => 'required|min:10|max:2000',
-        ]);
-
-        Mail::to('info@example.com')->send(new ContactMail($validated));
-
-        // After the work: a rejected form never gets here.
-        $this->trackLead([
-            'form_name' => 'contact_form',
-            'lead_type' => 'contact',
-        ]);
-
-        $this->reset(['name', 'email', 'message']);
-        $this->success = true;
-    }
-
-    public function render()
-    {
-        return view('livewire.contact-form');
-    }
-}
-```
-
-`App\Mail\ContactMail` is your own mailable. Note what is not in the parameters: the name, the e-mail address and the message.
-
-{% raw %}
-```blade
-<div>
-    @if ($success)
-        <p>Thank you, we will get back to you soon.</p>
-    @else
-        <form wire:submit="submit">
-            <input type="text" wire:model="name">
-            @error('name') <span>{{ $message }}</span> @enderror
-
-            <input type="email" wire:model="email">
-            @error('email') <span>{{ $message }}</span> @enderror
-
-            <textarea wire:model="message"></textarea>
-            @error('message') <span>{{ $message }}</span> @enderror
-
-            <button type="submit">Send</button>
-        </form>
-    @endif
-</div>
-```
-{% endraw %}
+Every example is a method of a Livewire component that uses the `TracksAnalytics` trait, and assumes the listener is in your layout, see [Installation](installation.md). A complete contact form, with every file, is on [Quick start](quickstart.md).
 
 ## Newsletter signup
 
@@ -98,6 +24,8 @@ public function subscribe(): void
 }
 ```
 
+`Subscriber` is your own model. The event is `sign_up`, with `method` set to `newsletter` by the package and `source` by you.
+
 ## Purchase
 
 ```php
@@ -114,6 +42,8 @@ public function completePurchase(): void
     $this->orderId = $order->id;
 }
 ```
+
+`$this->cart` stands for your own checkout code. The component stays on the page and shows the confirmation itself, so the normal `trackEvent()` is the right one.
 
 ## Purchase, then a redirect
 
@@ -152,6 +82,8 @@ public function download(int $brochureId)
 }
 ```
 
+`Brochure` is your own model. The browser event `ga_download_brochure` is part of the same Livewire response as the download.
+
 ## A step in a longer form
 
 ```php
@@ -167,3 +99,5 @@ public function nextStep(): void
     $this->step++;
 }
 ```
+
+`rulesForStep()` is your own method. Every completed step sends one `form_step_completed` event with the step number, which shows where visitors give up.

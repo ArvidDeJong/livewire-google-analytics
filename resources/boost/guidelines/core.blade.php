@@ -4,7 +4,7 @@ Sends Google Analytics 4 events from Livewire components. A trait dispatches a `
 
 - Add `Darvis\LivewireGoogleAnalytics\Traits\TracksAnalytics` to the component. Never build `gtag()` calls with `$this->js()`: a value from a visitor would become JavaScript source.
 - `trackEvent(string $name, array $params = [])` sends any event. `trackLead($params)` sends `generate_lead`. `trackNewsletterSignup($params)` sends `sign_up` with `method` set to `newsletter` unless the params hold their own `method`. `trackCustomEvent($name, $params)` sends `ga_` plus the name; pass the name without that prefix.
-- All four are `protected`, return nothing and never throw. Keep them protected: a public Livewire method can be called from the browser with any arguments.
+- All of them, the `AfterRedirect` variants included, are `protected`, return nothing and never throw. Keep them protected: a public Livewire method can be called from the browser with any arguments.
 - Call them in an action, after `validate()` and after the work succeeded. Never in `render()`, which runs on every request.
 - The layout needs `@@include('livewire-google-analytics::script')` once. For a Content Security Policy without inline scripts, publish `--tag=livewire-google-analytics-js` and load `/vendor/livewire-google-analytics/google-analytics.js` instead.
 - The package does not load `gtag.js` and has no config file, measurement id or environment variable. The host app adds its own Google tag. Don't invent a `config('google-analytics.…')` key.

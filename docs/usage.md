@@ -1,12 +1,12 @@
 ---
-title: Tracking events
-nav_order: 3
-description: "The four methods of the TracksAnalytics trait, the GA4 event each one sends, and where in a Livewire component you call them."
+title: "Tracking events"
+nav_order: 4
+description: "Every method of the TracksAnalytics trait, the GA4 event it sends, the AfterRedirect variants for an action that redirects, and where to call them."
 ---
 
 # Tracking events
 
-Add the trait to a Livewire component:
+Add the trait to a Livewire component. A trait is a set of methods a class takes over with `use`:
 
 ```php
 use Darvis\LivewireGoogleAnalytics\Traits\TracksAnalytics;
@@ -29,7 +29,7 @@ The trait adds four `protected` methods, and an `…AfterRedirect()` variant of 
 
 ## trackEvent()
 
-Sends any event. Use the names and parameters of [Google's recommended events](https://developers.google.com/analytics/devguides/collection/ga4/reference/events) where one fits, because GA4 builds its reports on them.
+Sends any event. Google publishes a list of [recommended events](https://developers.google.com/analytics/devguides/collection/ga4/reference/events) with their names and parameters; use one of those where it fits.
 
 ```php
 $this->trackEvent('purchase', [
@@ -39,7 +39,7 @@ $this->trackEvent('purchase', [
 ]);
 ```
 
-The package does not check the name or the parameters. GA4 has its own rules: a name starts with a letter and has only letters, digits and underscores.
+The package does not check the name or the parameters; they go to `gtag()` as you pass them. Google's [event naming rules](https://support.google.com/analytics/answer/13316687) say a name starts with a letter and has only letters, numbers and underscores.
 
 ## trackLead()
 
@@ -61,7 +61,7 @@ Your own `method` wins: `trackNewsletterSignup(['method' => 'popup'])` sends `me
 
 ## trackCustomEvent()
 
-Puts `ga_` in front of the name, so your own events sort together in the GA4 reports.
+Puts `ga_` in front of the name you pass.
 
 ```php
 $this->trackCustomEvent('download_brochure', ['brochure_name' => 'Catalogue']);
@@ -87,7 +87,7 @@ public function pay(): void
 }
 ```
 
-Livewire sends the browser event and the redirect in one response, and fires the event on the page that is about to disappear. Whether Google Analytics still gets it out is up to the browser, and an event that is waiting for `gtag` is certainly gone. The `…AfterRedirect()` methods don't dispatch. They keep the event in the session, and the listener view on the next page sends it, once.
+Livewire sends the browser event and the redirect in one response, and fires the event on the page that is about to disappear. Whether the event still gets out is up to the browser, and an event that is waiting for `gtag` on that page is gone with it. The `…AfterRedirect()` methods don't dispatch. They keep the event in the session, and the listener view on the next page sends it, once.
 
 | Method | Same event as |
 | --- | --- |
@@ -111,6 +111,6 @@ Livewire sends the browser event and the redirect in one response, and fires the
 
 ## What to put in the parameters
 
-Parameters are sent as JSON, so strings, numbers, booleans and nested arrays arrive as they are. Values from a form are safe for the page: they are never written into a script.
+Parameters reach the browser as JSON, so strings, numbers, booleans and nested arrays arrive as they are. Values from a form are safe for the page. A normal event travels inside Livewire's JSON response. An `…AfterRedirect()` event is written into the listener script of the next page as JSON in which every `<`, `>`, `&` and quote is escaped, so a value cannot end the script or run as code.
 
-They are not safe for your privacy policy. Don't send names, e-mail addresses, phone numbers or free text a visitor typed; Google's terms forbid personal data in Analytics.
+They are not safe for your privacy policy. Don't send names, e-mail addresses, phone numbers or free text a visitor typed. Everything in the parameters ends up in your Google Analytics property, so it has to fit your privacy statement.

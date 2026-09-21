@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- A [Quick start](https://arviddejong.github.io/livewire-google-analytics/quickstart.html) page with one
+  complete contact form: the layout, the component, its view and the route, each with its file name
+  and imports.
+- "Check that it works" on the installation page: two console checks, a test event you can paste,
+  where to see it in GA4 DebugView, and what it means when you see something else.
+- The index page now says what the package does not do: it does not load `gtag.js`, has no
+  measurement id setting, does no consent handling and sends nothing from the server.
+
+### Fixed
+- The troubleshooting page quoted the error `View [livewire-google-analytics::script] not found` for a
+  service provider that is not loaded. Laravel's real message in that case is
+  `No hint path defined for [livewire-google-analytics].`; `View [script] not found.` is what a wrong
+  view name gives. Both are on the page now, each with its fix.
+- The testing page said debug mode is turned on with the "Google Analytics Debugger extension".
+  Google's documentation names Tag Assistant and the `debug_mode` parameter, on the tag or on one
+  event (`'debug_mode' => true` in the params), and DebugView is under Admin, "Data display".
+- The usage page said form values "are never written into a script". That was true until 1.3.0: an
+  event of an `…AfterRedirect()` method is written into the listener script of the next page, as
+  JSON with every tag character and quote escaped. The page now says so.
+- The concepts page said every method of the trait ends in a `dispatch()` call; the `…AfterRedirect()`
+  methods don't. It also said Google's consent mode "does the rest" for queued events. The package
+  knows nothing about consent; the page now says what it does: it sends a waiting event once
+  `window.gtag` exists, and `['queue' => false]` turns that off.
+- The installation page said the listener "does nothing" when the script runs again under
+  `wire:navigate`. It does not listen a second time, but it does send the carried events of the new
+  page. The Laravel Boost guideline said "all four" methods are protected; all eight are.
+- Removed statements the package cannot vouch for: how fast GA4's Realtime report shows an event, why
+  GA4 prefers recommended event names, and what registering a custom dimension does. The README and
+  the docs now follow the same order as the other darvis packages, with a Laravel Boost section.
+
 ## [1.3.1] - 2026-09-21
 
 ### Fixed

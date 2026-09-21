@@ -1,5 +1,5 @@
 title: Livewire Google Analytics
-description: "darvis/livewire-google-analytics sends Google Analytics 4 events from Laravel Livewire components: a trait dispatches a browser event and a small listener forwards it to gtag()."
+description: "darvis/livewire-google-analytics sends Google Analytics 4 events from Laravel Livewire components: a trait dispatches a browser event and a listener script in the layout passes it to gtag()."
 url: https://arviddejong.github.io
 baseurl: /livewire-google-analytics
 
@@ -18,7 +18,7 @@ package:
   license_url: https://github.com/ArvidDeJong/livewire-google-analytics/blob/main/LICENSE
   requires: "PHP 8.2+, Laravel 11, 12 or 13, Livewire 3 or 4, a Google tag (gtag.js) on the page"
   platforms: [Laravel, Livewire]
-  keywords: [laravel, livewire, google analytics, ga4, gtag, event tracking, conversion tracking, generate_lead, analytics]
+  keywords: [laravel, livewire, google analytics, ga4, gtag, event tracking, conversion tracking, generate_lead, livewire redirect, cookie consent, wire navigate]
 
 # Developer credit in the footer and the structured data.
 developer:
