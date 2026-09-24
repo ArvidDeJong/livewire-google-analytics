@@ -109,6 +109,10 @@ composer analyse   # Larastan
 
 See [CHANGELOG](CHANGELOG.md).
 
+## Support the package
+
+If darvis/livewire-google-analytics saves you time, a star on [GitHub](https://github.com/ArvidDeJong/livewire-google-analytics) or a favourite on [Packagist](https://packagist.org/packages/darvis/livewire-google-analytics) helps other developers find it.
+
 ## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md).
