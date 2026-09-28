@@ -42,6 +42,8 @@ Add the view **once**, before `</body>`, in every layout that shows a component 
 
 The view renders one inline script tag. It listens for the `ga:event` browser event, which is the event the trait dispatches, and hands it to `gtag()`. It writes nothing to the browser console.
 
+If your Google tag only loads in some environments, for example only in production, see [Only where your Google tag loads](#only-where-your-google-tag-loads).
+
 ## 4. Add the trait to a component
 
 ```php
@@ -77,7 +79,7 @@ You should see `true` and `"function"`.
 
 | You see | It means | Do this |
 | --- | --- | --- |
-| `undefined` for the first line | the listener is not on this page | step 3: the include is missing from the layout this page uses |
+| `undefined` for the first line | the listener is not on this page | step 3: the include is missing from the layout this page uses, or sits behind a condition that is false here |
 | `"undefined"` for the second line | Google's tag is not on the page, or not yet | step 2; with a consent tool, give consent first and try again |
 
 **2. Send a test event.** Paste this in the console:
@@ -130,6 +132,20 @@ The file is copied to `public/vendor/livewire-google-analytics/google-analytics.
 Chrome hides messages of the `debug` level. In the Console tab, open the levels dropdown (it says "Default levels") and tick **Verbose**.
 
 A published file is a copy that Composer does not update. Publish it again with `--force` after you update the package.
+
+### Only where your Google tag loads
+
+Many sites load their Google tag only in production, when the environment holds a measurement id, so local and test visits stay out of the statistics. Put the include behind the same condition as the tag:
+
+```blade
+@if (filled(config('services.google_analytics.measurement_id')))
+    @include('livewire-google-analytics::script')
+@endif
+```
+
+`services.google_analytics.measurement_id` stands for wherever your app keeps its measurement id; the package itself reads no config.
+
+Leaving the include outside the condition does no harm either. Without `window.gtag` an event waits in memory, is never sent and disappears with the page. Behind the condition there is no listener at all: a tracked event is dispatched and nothing picks it up, and the events of the `…AfterRedirect()` methods stay in the session, at most 50 of them. [How it works](concepts.md) explains the waiting.
 
 ### Turn the queue off
 
