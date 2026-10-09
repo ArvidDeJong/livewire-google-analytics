@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- The installation page shows how to load the listener only where your Google tag loads, for example
+  only in production, and what happens to a tracked event with and without the listener on the page.
+
 ## [1.3.2] - 2026-09-21
 
 ### Added
